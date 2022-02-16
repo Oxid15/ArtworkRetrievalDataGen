@@ -5,7 +5,7 @@ import yaml
 
 import bpy
 
- 
+
 argv = sys.argv[sys.argv.index('--') + 1:]
 parser = argparse.ArgumentParser()
 parser.add_argument('-c', '--cfg', type=str)
@@ -18,6 +18,8 @@ if __name__ == '__main__':
     bpy.data.objects['Cube'].select = True
     bpy.ops.object.delete(use_global=False)
 
+    # bpy.data.objects['Camera'].select = True
+
     bpy.ops.import_image.to_plane(
         files=[{"name":""}], 
         directory="", 
@@ -27,8 +29,6 @@ if __name__ == '__main__':
     bpy.context.object.location[0] = 0
     bpy.context.object.location[1] = 0
     bpy.context.object.location[2] = 0
-
-    bpy.data.objects['Camera'].select = True
 
     bpy.context.scene.render.filepath = cfg['destination_folder'] + '\\01.png'
     bpy.ops.render.render(write_still=True)
