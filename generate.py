@@ -7,40 +7,59 @@ import bpy
 
 
 class Generator():
+    def parse_images(self):
+        self.img_names = os.listdir(self.src)
+
     def _parse_config(self, config_path):
         with open(config_path, 'r') as f:
             cfg = yaml.safe_load(f)
         
+        self.src = cfg['source_folder']
         self.dest = cfg['destination_folder']
 
+        self.parse_images()
 
     def __init__(self, config_path) -> None:
         self._parse_config(config_path)
 
-    def _arrange_scene(self):
-        bpy.data.objects['Cube'].select = True
-        bpy.ops.object.delete(use_global=False)
+    def _clear_scene(self):
+        while(len(bpy.data.objects)):
+            obj = bpy.data.objects[-1]
+            obj.select = True
+            bpy.ops.object.delete(use_global=False)
 
-        # bpy.data.objects['Camera'].select = True
-        # bpy.ops.mesh.primitive_plane_add(radius=1, view_align=False, enter_editmode=False, location=(0.999982, -0.699609, 0.00561283), layers=(True, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False))
+    def _add_camera(self):
+        bpy.ops.object.camera_add(
+            view_align=True, enter_editmode=False, 
+            location=(2, -3, 0), 
+            rotation=(1.57, 0., 0.8))
+
+    def _add_lights(self):
+        bpy.ops.object.lamp_add(type='POINT', 
+            radius=1, view_align=False, 
+            location=(2, -2, 2))
+
+    def _arrange_scene(self, img_name):
+        self._clear_scene()
+        self._add_camera()
+        self._add_lights()
 
         bpy.ops.import_image.to_plane(
-            files=[{"name":""}], 
-            directory=r"", 
-            filter_image=True, filter_movie=True, filter_glob="", relative=False)
-
+            files=[{"name": img_name}], 
+            directory=self.src,
+            filter_image=True, filter_movie=True, filter_glob="", relative=False,
+            location=(0,0,0))
         bpy.context.object.rotation_euler[0] = 1.5708
-        bpy.context.object.location[0] = 0
-        bpy.context.object.location[1] = 0
-        bpy.context.object.location[2] = 0
 
-    def _render(self):
-        bpy.context.scene.render.filepath = self.dest + '\\01.png'
-        bpy.ops.render.render(write_still=True)
+    def _render(self, img_name):
+        bpy.context.scene.camera = bpy.data.objects['Camera']
+        bpy.context.scene.render.filepath = os.path.join(self.dest, img_name)
+        bpy.ops.render.render('INVOKE_DEFAULT', write_still=True)
 
     def mainloop(self):
-        self._arrange_scene()
-        self._render()
+        for name in self.img_names:
+            self._arrange_scene(name)
+            self._render(name)
 
 
 argv = sys.argv[sys.argv.index('--') + 1:]

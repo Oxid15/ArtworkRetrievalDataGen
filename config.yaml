@@ -1,1 +1,5 @@
-destination_folder: ""
+# The folder with images to render on the wall
+source_folder: "C:\\Users\\oxid\\Desktop\\src"
+
+# The folder to place renders
+destination_folder: "C:\\Users\\oxid\\Desktop\\dst"
