@@ -32,9 +32,9 @@ class Generator():
 
         # Not required parameters
         if 'camera_angles' in cfg:
-            self.camera_angles = cfg['camera_angles']
+            self.camera_angles = [deg2rad(a) for a in cfg['camera_angles']]
         else:
-            self.camera_angles = (0, 0)
+            self.camera_angles = (deg2rad(90), 0)
         
         if 'camera_distance' in cfg:
             self.camera_distance = cfg['camera_distance']
@@ -60,23 +60,36 @@ class Generator():
             view_align=True,
             enter_editmode=False,
             location=loc,
-            rotation=(ang[0], 0., ang[1]))
+            rotation=((0., 0., 0.)))
+
+        cam = bpy.data.objects['Camera']
+        constraint = cam.constraints.new('TRACK_TO')
+        constraint.target = self.image
+        constraint.track_axis = 'TRACK_NEGATIVE_Z'
+        constraint.up_axis = 'UP_Y'
 
     def _add_lights(self):
         bpy.ops.object.lamp_add(type='POINT', 
             radius=1, view_align=False, 
             location=(2, -2, 2))
 
-    def _arrange_scene(self, img_name):
-        self._clear_scene()
-        self._add_camera()
-        self._add_lights()
-
+    def _add_object(self, img_name):
         bpy.ops.import_image.to_plane(
             files=[{"name": img_name}], 
             directory=self.src,
             filter_image=True, filter_movie=True, filter_glob="", relative=False,
             location=(0,0,0))
+        
+        name = img_name.split('.')[0]
+        self.image = bpy.data.objects[name]
+        self.image.rotation_euler[0] = deg2rad(90)
+        self.image.rotation_euler[2] = deg2rad(90)
+
+    def _arrange_scene(self, img_name):
+        self._clear_scene()
+        self._add_lights()
+        self._add_object(img_name)
+        self._add_camera()
 
     def _render(self, img_name):
         bpy.context.scene.camera = bpy.data.objects['Camera']
