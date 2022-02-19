@@ -14,8 +14,15 @@ class Generator():
         with open(config_path, 'r') as f:
             cfg = yaml.safe_load(f)
         
-        self.src = cfg['source_folder']
-        self.dest = cfg['destination_folder']
+        if 'source_folder' in cfg:
+            self.src = cfg['source_folder']
+        else:
+            raise KeyError('"source_folder" is not found in {config_path}')
+        
+        if 'destination_folder' in cfg:
+            self.dest = cfg['destination_folder']
+        else:
+            raise KeyError('"destination_folder" is not found in {config_path}')
 
         self.parse_images()
 
