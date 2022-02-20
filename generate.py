@@ -76,6 +76,9 @@ class Generator():
             rotation=((0., 0., 0.)))
 
         cam = bpy.data.objects['Camera']
+        constraint = cam.constraints.new(type='LIMIT_LOCATION')
+        constraint.use_min_z = True
+
         constraint = cam.constraints.new('TRACK_TO')
         constraint.target = self.image
         constraint.track_axis = 'TRACK_NEGATIVE_Z'
@@ -97,15 +100,28 @@ class Generator():
         self.image.rotation_euler[0] = deg2rad(90)
         self.image.rotation_euler[2] = deg2rad(90)
         
+        # Wall
         bpy.ops.mesh.primitive_plane_add(radius=1, view_align=False, enter_editmode=False, 
             location=(-0.01, 0, 0))
         plane = bpy.data.objects['Plane']
-        plane.scale[0] = np.random.random() * 3 + 1
+        y_scale = np.random.random() * 3 + 1
+        plane.scale[0] = y_scale
         plane.rotation_euler[0] = deg2rad(90)
         plane.rotation_euler[2] = deg2rad(90)
 
         bpy.ops.material.new()
         plane.data.materials.append(bpy.data.materials[0])
+        plane.data.materials[0].diffuse_color = np.random.random(3)
+
+        # Floor
+        bpy.ops.mesh.primitive_plane_add(radius=1, view_align=False, enter_editmode=False, 
+            location=(0, 0, -0.7))
+        plane = bpy.data.objects['Plane.001']
+        plane.scale[0] = 10
+        plane.scale[1] = 10
+
+        bpy.ops.material.new()
+        plane.data.materials.append(bpy.data.materials[1])
         plane.data.materials[0].diffuse_color = np.random.random(3)
 
 
