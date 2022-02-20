@@ -86,22 +86,33 @@ class Generator():
             radius=1, view_align=False, 
             location=(2, -2, 2))
 
-    def _add_object(self, img_name):
+    def _add_objects(self, img_name):
         bpy.ops.import_image.to_plane(
             files=[{"name": img_name}], 
             directory=self.src,
             filter_image=True, filter_movie=True, filter_glob="", relative=False,
             location=(0,0,0))
-        
         name = img_name.split('.')[0]
         self.image = bpy.data.objects[name]
         self.image.rotation_euler[0] = deg2rad(90)
         self.image.rotation_euler[2] = deg2rad(90)
+        
+        bpy.ops.mesh.primitive_plane_add(radius=1, view_align=False, enter_editmode=False, 
+            location=(-0.01, 0, 0))
+        plane = bpy.data.objects['Plane']
+        plane.scale[0] = np.random.random() * 3 + 1
+        plane.rotation_euler[0] = deg2rad(90)
+        plane.rotation_euler[2] = deg2rad(90)
+
+        bpy.ops.material.new()
+        plane.data.materials.append(bpy.data.materials[0])
+        plane.data.materials[0].diffuse_color = np.random.random(3)
+
 
     def _arrange_scene(self, img_name):
         self._clear_scene()
         self._add_lights()
-        self._add_object(img_name)
+        self._add_objects(img_name)
         self._add_camera()
 
     def _render(self, index, img_name):
