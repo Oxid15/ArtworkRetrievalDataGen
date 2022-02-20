@@ -31,15 +31,20 @@ class Generator():
             raise KeyError('"destination_folder" is not found in {config_path}')
 
         # Not required parameters
-        if 'camera_angles' in cfg:
-            self.camera_angles = [deg2rad(a) for a in cfg['camera_angles']]
+        if 'camera_angles_range' in cfg:
+            self.camera_angles_range = [[b for b in a] for a in cfg['camera_angles_range']]
         else:
-            self.camera_angles = (deg2rad(90), 0)
+            self.camera_angles_range = ((90, 0), (90, 0))
         
-        if 'camera_distance' in cfg:
-            self.camera_distance = cfg['camera_distance']
+        if 'camera_distance_range' in cfg:
+            self.camera_distance_range = cfg['camera_distance_range']
         else:
-            self.camera_distance = 5
+            self.camera_distance_range = (5, 5)
+        
+        if 'render_per_input' in cfg:
+            self.render_per_input = cfg['render_per_input']
+        else:
+            self.render_per_input = 1
 
         self.parse_images()
 
@@ -53,8 +58,16 @@ class Generator():
             bpy.ops.object.delete(use_global=False)
 
     def _add_camera(self):
-        loc = spherical2cartesian(self.camera_angles, self.camera_distance)
-        ang = self.camera_angles
+        ang = self.camera_angles_range
+        first_min, first_max = ang[0][0], ang[1][0]
+        second_min, second_max = ang[0][1], ang[1][1]
+        first_ang = np.random.random() * (first_max - first_min) + first_min
+        second_ang = np.random.random() * (second_max - second_min) + second_min
+
+        d_max, d_min = self.camera_distance_range
+        dist = np.random.random() * (d_max - d_min) + d_min
+
+        loc = spherical2cartesian((deg2rad(first_ang), deg2rad(second_ang)), dist)
 
         bpy.ops.object.camera_add(
             view_align=True,
@@ -91,15 +104,21 @@ class Generator():
         self._add_object(img_name)
         self._add_camera()
 
-    def _render(self, img_name):
+    def _render(self, index, img_name):
         bpy.context.scene.camera = bpy.data.objects['Camera']
+
+        base, ext = img_name.split(os.extsep)
+        img_name = base + "_{0:0>5d}".format(index)
+        '.'.join((img_name, ext))
+
         bpy.context.scene.render.filepath = os.path.join(self.dest, img_name)
         bpy.ops.render.render('INVOKE_DEFAULT', write_still=True)
 
     def mainloop(self):
         for name in self.img_names:
-            self._arrange_scene(name)
-            self._render(name)
+            for i in range(self.render_per_input):
+                self._arrange_scene(name)
+                self._render(i, name)
 
 
 argv = sys.argv[sys.argv.index('--') + 1:]
