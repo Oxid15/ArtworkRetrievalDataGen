@@ -1,11 +1,11 @@
 import os
-import sys
-import argparse
+
+# import sys
 
 import bpy
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(SCRIPT_DIR)
+# SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+# sys.path.append(SCRIPT_DIR)
 
 from utils import *
 from settings import (
@@ -40,7 +40,7 @@ class Generator:
     def _clear_scene(self):
         while len(bpy.data.objects):
             obj = bpy.data.objects[-1]
-            obj.select = True
+            obj.select_set(True)
             bpy.ops.object.delete(use_global=False)
 
     def _add_camera(self):
@@ -56,7 +56,7 @@ class Generator:
         loc = spherical2cartesian((deg2rad(first_ang), deg2rad(second_ang)), dist)
 
         bpy.ops.object.camera_add(
-            view_align=True,
+            align="VIEW",
             enter_editmode=False,
             location=loc,
             rotation=((0.0, 0.0, 0.0)),
@@ -67,33 +67,33 @@ class Generator:
         constraint.use_min_z = True
 
         constraint = cam.constraints.new("TRACK_TO")
-        constraint.target = self.image
+        # constraint.target = self.image
         constraint.track_axis = "TRACK_NEGATIVE_Z"
         constraint.up_axis = "UP_Y"
 
     def _add_lights(self):
-        bpy.ops.object.lamp_add(
-            type="POINT", radius=1, view_align=False, location=(2, -2, 2)
+        bpy.ops.object.light_add(
+            type="POINT", radius=1, align="VIEW", location=(2, -2, 2)
         )
 
     def _add_objects(self, img_name):
-        bpy.ops.import_image.to_plane(
-            files=[{"name": img_name}],
-            directory=self.src,
-            filter_image=True,
-            filter_movie=True,
-            filter_glob="",
-            relative=False,
-            location=(0, 0, 0),
-        )
-        name = img_name.split(".")[0]
-        self.image = bpy.data.objects[name]
-        self.image.rotation_euler[0] = deg2rad(90)
-        self.image.rotation_euler[2] = deg2rad(90)
+        # bpy.ops.import_image.to_plane(
+        #     files=[{"name": img_name}],
+        #     directory=self.src,
+        #     filter_image=True,
+        #     filter_movie=True,
+        #     filter_glob="",
+        #     relative=False,
+        #     location=(0, 0, 0),
+        # )
+        # name = img_name.split(".")[0]
+        # self.image = bpy.data.objects[name]
+        # self.image.rotation_euler[0] = deg2rad(90)
+        # self.image.rotation_euler[2] = deg2rad(90)
 
         # Wall
         bpy.ops.mesh.primitive_plane_add(
-            radius=1, view_align=False, enter_editmode=False, location=(-0.01, 0, 0)
+            size=1, align="VIEW", enter_editmode=False, location=(-0.01, 0, 0)
         )
         plane = bpy.data.objects["Plane"]
         y_scale = np.random.random() * 3 + 1
@@ -103,11 +103,11 @@ class Generator:
 
         bpy.ops.material.new()
         plane.data.materials.append(bpy.data.materials[0])
-        plane.data.materials[0].diffuse_color = np.random.random(3)
+        plane.data.materials[0].diffuse_color = np.random.random(4)
 
         # Floor
         bpy.ops.mesh.primitive_plane_add(
-            radius=1, view_align=False, enter_editmode=False, location=(0, 0, -0.7)
+            size=1, align="VIEW", enter_editmode=False, location=(0, 0, -0.7)
         )
         plane = bpy.data.objects["Plane.001"]
         plane.scale[0] = 10
@@ -115,7 +115,7 @@ class Generator:
 
         bpy.ops.material.new()
         plane.data.materials.append(bpy.data.materials[1])
-        plane.data.materials[0].diffuse_color = np.random.random(3)
+        plane.data.materials[0].diffuse_color = np.random.random(4)
 
     def _arrange_scene(self, img_name):
         self._clear_scene()
