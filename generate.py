@@ -1,11 +1,10 @@
 import os
-
-# import sys
+import sys
 
 import bpy
 
-# SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-# sys.path.append(SCRIPT_DIR)
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(SCRIPT_DIR)
 
 from utils import *
 from settings import (
@@ -67,7 +66,7 @@ class Generator:
         constraint.use_min_z = True
 
         constraint = cam.constraints.new("TRACK_TO")
-        # constraint.target = self.image
+        constraint.target = self.image
         constraint.track_axis = "TRACK_NEGATIVE_Z"
         constraint.up_axis = "UP_Y"
 
@@ -77,19 +76,19 @@ class Generator:
         )
 
     def _add_objects(self, img_name):
-        # bpy.ops.import_image.to_plane(
-        #     files=[{"name": img_name}],
-        #     directory=self.src,
-        #     filter_image=True,
-        #     filter_movie=True,
-        #     filter_glob="",
-        #     relative=False,
-        #     location=(0, 0, 0),
-        # )
-        # name = img_name.split(".")[0]
-        # self.image = bpy.data.objects[name]
-        # self.image.rotation_euler[0] = deg2rad(90)
-        # self.image.rotation_euler[2] = deg2rad(90)
+        bpy.ops.import_image.to_plane(
+            files=[{"name": img_name}],
+            directory=self.src,
+            filter_image=True,
+            filter_movie=True,
+            filter_folder=False,
+            relative=False,
+            location=(0, 0, 0),
+        )
+        name = img_name.split(".")[0]
+        self.image = bpy.data.objects[name]
+        self.image.rotation_euler[0] = deg2rad(90)
+        self.image.rotation_euler[2] = deg2rad(90)
 
         # Wall
         bpy.ops.mesh.primitive_plane_add(
@@ -102,8 +101,10 @@ class Generator:
         plane.rotation_euler[2] = deg2rad(90)
 
         bpy.ops.material.new()
-        plane.data.materials.append(bpy.data.materials[0])
-        plane.data.materials[0].diffuse_color = np.random.random(4)
+        bpy.data.materials[-1].node_tree.nodes["Principled BSDF"].inputs[
+            0
+        ].default_value = np.random.random(4)
+        plane.data.materials.append(bpy.data.materials[-1])
 
         # Floor
         bpy.ops.mesh.primitive_plane_add(
@@ -114,8 +115,10 @@ class Generator:
         plane.scale[1] = 10
 
         bpy.ops.material.new()
-        plane.data.materials.append(bpy.data.materials[1])
-        plane.data.materials[0].diffuse_color = np.random.random(4)
+        bpy.data.materials[-1].node_tree.nodes["Principled BSDF"].inputs[
+            0
+        ].default_value = np.random.random(4)
+        plane.data.materials.append(bpy.data.materials[-1])
 
     def _arrange_scene(self, img_name):
         self._clear_scene()
