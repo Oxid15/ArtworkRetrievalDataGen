@@ -22,4 +22,4 @@ if __name__ == "__main__":
         camera_distance_range=camera_distance_range,
         render_per_input=render_per_input,
     )
-    gen.mainloop()
+    gen.run()

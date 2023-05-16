@@ -125,7 +125,7 @@ class Generator:
         bpy.context.scene.render.filepath = os.path.join(self.dest, img_name)
         bpy.ops.render.render("INVOKE_DEFAULT", write_still=True)
 
-    def mainloop(self):
+    def run(self):
         for name in self.img_names:
             for i in range(self.render_per_input):
                 self._arrange_scene(name)
