@@ -2,7 +2,7 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# The folder with images to render on the wall
+# The folder with images to render
 source_folder = os.path.join(BASE_DIR, "src")
 
 # The folder to place renders
