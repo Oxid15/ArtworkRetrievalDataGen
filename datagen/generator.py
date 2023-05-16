@@ -84,8 +84,8 @@ class Generator:
             size=1, align="VIEW", enter_editmode=False, location=(-0.01, 0, 0)
         )
         plane = bpy.data.objects["Plane"]
-        y_scale = np.random.random() * 3 + 1
-        plane.scale[0] = y_scale
+        plane.scale[0] = 1000
+        plane.scale[1] = 1000
         plane.rotation_euler[0] = deg2rad(90)
         plane.rotation_euler[2] = deg2rad(90)
 
@@ -100,8 +100,8 @@ class Generator:
             size=1, align="VIEW", enter_editmode=False, location=(0, 0, -0.7)
         )
         plane = bpy.data.objects["Plane.001"]
-        plane.scale[0] = 10
-        plane.scale[1] = 10
+        plane.scale[0] = 100
+        plane.scale[1] = 100
 
         bpy.ops.material.new()
         bpy.data.materials[-1].node_tree.nodes["Principled BSDF"].inputs[
