@@ -23,7 +23,7 @@ git clone https://github.com/Oxid15/ArtworkRetrievalDataGen.git
     mkdir dst
     ```
 
-2. Adjust parameters in the file `settings.py`
+2. Adjust parameters in the file `generate.py`
 3. Run the rendering
 
     ```bash
@@ -32,4 +32,4 @@ git clone https://github.com/Oxid15/ArtworkRetrievalDataGen.git
 
 4. Review the results in the destination folder
 
-    ![Alt text](./examples/00001.png)
+    ![Alt text](./examples/00000.png)
