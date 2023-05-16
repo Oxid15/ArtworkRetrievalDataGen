@@ -1,7 +1,6 @@
 import os
 import sys
 import argparse
-import yaml
 
 import bpy
 
@@ -9,50 +8,37 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(SCRIPT_DIR)
 
 from utils import *
+from settings import (
+    source_folder,
+    destination_folder,
+    camera_angles_range,
+    camera_distance_range,
+    render_per_input,
+)
 
 
-class Generator():
-    def parse_images(self):
-        self.img_names = os.listdir(self.src)
-
-    def _parse_config(self, config_path):
-        with open(config_path, 'r') as f:
-            cfg = yaml.safe_load(f)
-
-        # Required parameters
-        if 'source_folder' in cfg:
-            self.src = cfg['source_folder']
-        else:
-            raise KeyError('"source_folder" is not found in {config_path}')
-
-        if 'destination_folder' in cfg:
-            self.dest = cfg['destination_folder']
-        else:
-            raise KeyError('"destination_folder" is not found in {config_path}')
-
-        # Not required parameters
-        if 'camera_angles_range' in cfg:
-            self.camera_angles_range = [[b for b in a] for a in cfg['camera_angles_range']]
-        else:
-            self.camera_angles_range = ((90, 0), (90, 0))
-        
-        if 'camera_distance_range' in cfg:
-            self.camera_distance_range = cfg['camera_distance_range']
-        else:
-            self.camera_distance_range = (5, 5)
-        
-        if 'render_per_input' in cfg:
-            self.render_per_input = cfg['render_per_input']
-        else:
-            self.render_per_input = 1
+class Generator:
+    def __init__(
+        self,
+        src,
+        dest,
+        camera_angles_range=((90, 0), (90, 0)),
+        camera_distance_range=(5, 5),
+        render_per_input=1,
+    ) -> None:
+        self.src = src
+        self.dest = dest
+        self.camera_angles_range = camera_angles_range
+        self.camera_distance_range = camera_distance_range
+        self.render_per_input = render_per_input
 
         self.parse_images()
 
-    def __init__(self, config_path) -> None:
-        self._parse_config(config_path)
+    def parse_images(self):
+        self.img_names = os.listdir(self.src)
 
     def _clear_scene(self):
-        while(len(bpy.data.objects)):
+        while len(bpy.data.objects):
             obj = bpy.data.objects[-1]
             obj.select = True
             bpy.ops.object.delete(use_global=False)
@@ -73,37 +59,43 @@ class Generator():
             view_align=True,
             enter_editmode=False,
             location=loc,
-            rotation=((0., 0., 0.)))
+            rotation=((0.0, 0.0, 0.0)),
+        )
 
-        cam = bpy.data.objects['Camera']
-        constraint = cam.constraints.new(type='LIMIT_LOCATION')
+        cam = bpy.data.objects["Camera"]
+        constraint = cam.constraints.new(type="LIMIT_LOCATION")
         constraint.use_min_z = True
 
-        constraint = cam.constraints.new('TRACK_TO')
+        constraint = cam.constraints.new("TRACK_TO")
         constraint.target = self.image
-        constraint.track_axis = 'TRACK_NEGATIVE_Z'
-        constraint.up_axis = 'UP_Y'
+        constraint.track_axis = "TRACK_NEGATIVE_Z"
+        constraint.up_axis = "UP_Y"
 
     def _add_lights(self):
-        bpy.ops.object.lamp_add(type='POINT', 
-            radius=1, view_align=False, 
-            location=(2, -2, 2))
+        bpy.ops.object.lamp_add(
+            type="POINT", radius=1, view_align=False, location=(2, -2, 2)
+        )
 
     def _add_objects(self, img_name):
         bpy.ops.import_image.to_plane(
-            files=[{"name": img_name}], 
+            files=[{"name": img_name}],
             directory=self.src,
-            filter_image=True, filter_movie=True, filter_glob="", relative=False,
-            location=(0,0,0))
-        name = img_name.split('.')[0]
+            filter_image=True,
+            filter_movie=True,
+            filter_glob="",
+            relative=False,
+            location=(0, 0, 0),
+        )
+        name = img_name.split(".")[0]
         self.image = bpy.data.objects[name]
         self.image.rotation_euler[0] = deg2rad(90)
         self.image.rotation_euler[2] = deg2rad(90)
-        
+
         # Wall
-        bpy.ops.mesh.primitive_plane_add(radius=1, view_align=False, enter_editmode=False, 
-            location=(-0.01, 0, 0))
-        plane = bpy.data.objects['Plane']
+        bpy.ops.mesh.primitive_plane_add(
+            radius=1, view_align=False, enter_editmode=False, location=(-0.01, 0, 0)
+        )
+        plane = bpy.data.objects["Plane"]
         y_scale = np.random.random() * 3 + 1
         plane.scale[0] = y_scale
         plane.rotation_euler[0] = deg2rad(90)
@@ -114,16 +106,16 @@ class Generator():
         plane.data.materials[0].diffuse_color = np.random.random(3)
 
         # Floor
-        bpy.ops.mesh.primitive_plane_add(radius=1, view_align=False, enter_editmode=False, 
-            location=(0, 0, -0.7))
-        plane = bpy.data.objects['Plane.001']
+        bpy.ops.mesh.primitive_plane_add(
+            radius=1, view_align=False, enter_editmode=False, location=(0, 0, -0.7)
+        )
+        plane = bpy.data.objects["Plane.001"]
         plane.scale[0] = 10
         plane.scale[1] = 10
 
         bpy.ops.material.new()
         plane.data.materials.append(bpy.data.materials[1])
         plane.data.materials[0].diffuse_color = np.random.random(3)
-
 
     def _arrange_scene(self, img_name):
         self._clear_scene()
@@ -132,14 +124,14 @@ class Generator():
         self._add_camera()
 
     def _render(self, index, img_name):
-        bpy.context.scene.camera = bpy.data.objects['Camera']
+        bpy.context.scene.camera = bpy.data.objects["Camera"]
 
         base, ext = img_name.split(os.extsep)
         img_name = base + "_{0:0>5d}".format(index)
-        '.'.join((img_name, ext))
+        ".".join((img_name, ext))
 
         bpy.context.scene.render.filepath = os.path.join(self.dest, img_name)
-        bpy.ops.render.render('INVOKE_DEFAULT', write_still=True)
+        bpy.ops.render.render("INVOKE_DEFAULT", write_still=True)
 
     def mainloop(self):
         for name in self.img_names:
@@ -148,11 +140,12 @@ class Generator():
                 self._render(i, name)
 
 
-argv = sys.argv[sys.argv.index('--') + 1:]
-parser = argparse.ArgumentParser()
-parser.add_argument('-c', '--cfg', type=str)
-args = parser.parse_known_args(argv)[0]
-
-if __name__ == '__main__':
-    gen = Generator(args.cfg)
+if __name__ == "__main__":
+    gen = Generator(
+        src=source_folder,
+        dest=destination_folder,
+        camera_angles_range=camera_angles_range,
+        camera_distance_range=camera_distance_range,
+        render_per_input=render_per_input,
+    )
     gen.mainloop()
