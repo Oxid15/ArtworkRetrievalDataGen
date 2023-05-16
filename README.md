@@ -4,7 +4,11 @@ Artwork image retrieval synthetic data generator
 
 ## Installation
 
-You will need to have `blender` 3.5 installed, then clone the repo.
+You will need to have `blender` 3.5 installed.  
+  
+Import image as planes addon is used and needs to be activated.  
+  
+To install the project, clone the repo.
 
 ```bash
 git clone https://github.com/Oxid15/ArtworkRetrievalDataGen.git
