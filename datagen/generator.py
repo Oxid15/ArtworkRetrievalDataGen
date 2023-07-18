@@ -1,4 +1,8 @@
+import csv
+import json
+import logging
 import os
+from typing import Tuple, Union
 
 import bpy
 
@@ -8,40 +12,49 @@ from .utils import *
 class Generator:
     def __init__(
         self,
-        src,
-        dest,
-        camera_angles_range=((90, 0), (90, 0)),
-        camera_distance_range=(5, 5),
-        render_per_input=1,
+        src: str,
+        dst: str,
+        camera_angles_range_h: Tuple[float, float] = (0, 0),
+        camera_angles_range_v: Tuple[float, float] = (90, 90),
+        camera_distance_range: Tuple[float, float] = (5, 5),
+        render_per_input: int = 1,
+        max_images_to_render: Union[int, None] = None,
+        generate_table: bool = False,
+        generate_meta: bool = False,
     ) -> None:
         self.src = src
-        self.dest = dest
-        self.camera_angles_range = camera_angles_range
+        self.dst = dst
+        self.camera_angles_range_h = camera_angles_range_h
+        self.camera_angles_range_v = camera_angles_range_v
         self.camera_distance_range = camera_distance_range
         self.render_per_input = render_per_input
+        self.max_images_to_render = max_images_to_render
+        self.generate_table = generate_table
+        self.generate_meta = generate_meta
 
         self.parse_images()
 
-    def parse_images(self):
-        self.img_names = os.listdir(self.src)
+    def parse_images(self) -> None:
+        self.img_names = sorted(os.listdir(self.src))
 
-    def _clear_scene(self):
+    def _clear_scene(self) -> None:
         while len(bpy.data.objects):
             obj = bpy.data.objects[-1]
             obj.select_set(True)
             bpy.ops.object.delete(use_global=False)
 
-    def _add_camera(self):
-        ang = self.camera_angles_range
-        first_min, first_max = ang[0][0], ang[1][0]
-        second_min, second_max = ang[0][1], ang[1][1]
-        first_ang = np.random.random() * (first_max - first_min) + first_min
-        second_ang = np.random.random() * (second_max - second_min) + second_min
+            # bpy.data.materials.remove(bpy.data.materials['Wall-Material'])
+
+    def _add_camera(self) -> None:
+        v_min, v_max = self.camera_angles_range_v
+        h_min, h_max = self.camera_angles_range_h
+        v_ang = np.random.random() * (v_max - v_min) + v_min
+        h_ang = np.random.random() * (h_max - h_min) + h_min
 
         d_max, d_min = self.camera_distance_range
         dist = np.random.random() * (d_max - d_min) + d_min
 
-        loc = spherical2cartesian((deg2rad(first_ang), deg2rad(second_ang)), dist)
+        loc = spherical2cartesian((deg2rad(v_ang), deg2rad(h_ang)), dist)
 
         bpy.ops.object.camera_add(
             align="VIEW",
@@ -51,20 +64,21 @@ class Generator:
         )
 
         cam = bpy.data.objects["Camera"]
-        constraint = cam.constraints.new(type="LIMIT_LOCATION")
-        constraint.use_min_z = True
+        # constraint = cam.constraints.new(type="LIMIT_LOCATION")
+        # constraint.use_min_z = True
 
         constraint = cam.constraints.new("TRACK_TO")
         constraint.target = self.image
         constraint.track_axis = "TRACK_NEGATIVE_Z"
         constraint.up_axis = "UP_Y"
 
-    def _add_lights(self):
+    def _add_lights(self) -> None:
         bpy.ops.object.light_add(
             type="POINT", radius=1, align="VIEW", location=(2, -2, 2)
         )
+        bpy.data.objects["Point"].data.energy = 1000
 
-    def _add_objects(self, img_name):
+    def _add_objects(self, img_name: str) -> None:
         bpy.ops.import_image.to_plane(
             files=[{"name": img_name}],
             directory=self.src,
@@ -90,43 +104,117 @@ class Generator:
         plane.rotation_euler[2] = deg2rad(90)
 
         bpy.ops.material.new()
-        bpy.data.materials[-1].node_tree.nodes["Principled BSDF"].inputs[
+        mat = bpy.data.materials["Material.001"]
+        mat.name = "Wall-Material"
+        bpy.data.materials["Wall-Material"].node_tree.nodes["Principled BSDF"].inputs[
             0
         ].default_value = np.random.random(4)
-        plane.data.materials.append(bpy.data.materials[-1])
+        plane.data.materials.append(bpy.data.materials["Wall-Material"])
 
         # Floor
         bpy.ops.mesh.primitive_plane_add(
-            size=1, align="VIEW", enter_editmode=False, location=(0, 0, -0.7)
+            size=1, align="VIEW", enter_editmode=False, location=(0, 0, -1)
         )
         plane = bpy.data.objects["Plane.001"]
         plane.scale[0] = 100
         plane.scale[1] = 100
 
         bpy.ops.material.new()
-        bpy.data.materials[-1].node_tree.nodes["Principled BSDF"].inputs[
+        mat = bpy.data.materials["Material.001"]
+        mat.name = "Floor-Material"
+        bpy.data.materials["Floor-Material"].node_tree.nodes["Principled BSDF"].inputs[
             0
         ].default_value = np.random.random(4)
-        plane.data.materials.append(bpy.data.materials[-1])
+        plane.data.materials.append(bpy.data.materials["Floor-Material"])
 
-    def _arrange_scene(self, img_name):
+    def _arrange_scene(self, img_name: str):
         self._clear_scene()
         self._add_lights()
         self._add_objects(img_name)
         self._add_camera()
 
-    def _render(self, index, img_name):
+    def _render(self, render_name: str):
         bpy.context.scene.camera = bpy.data.objects["Camera"]
-
-        base, ext = img_name.split(os.extsep)
-        img_name = base + "_{0:0>5d}".format(index)
-        ".".join((img_name, ext))
-
-        bpy.context.scene.render.filepath = os.path.join(self.dest, img_name)
+        bpy.context.scene.render.filepath = os.path.join(
+            self.dst, "images", render_name
+        )
+        bpy.context.scene.render.image_settings.file_format = "JPEG"
         bpy.ops.render.render("INVOKE_DEFAULT", write_still=True)
 
-    def run(self):
-        for name in self.img_names:
-            for i in range(self.render_per_input):
-                self._arrange_scene(name)
-                self._render(i, name)
+    def _write_meta(self) -> None:
+        meta = {
+            "src": self.src,
+            "dst": self.dst,
+            "camera_angles_range_h": self.camera_angles_range_h,
+            "camera_angles_range_v": self.camera_angles_range_v,
+            "camera_distance_range": self.camera_distance_range,
+            "render_per_input": self.render_per_input,
+            "size": self._names,
+        }
+
+        with open(os.path.join(self.dst, "meta.json"), "w") as f:
+            json.dump(meta, f, indent=2)
+
+    def _rendering_loop(self, writer: Union[csv.DictWriter, None]) -> None:
+        if writer:
+            writer.writeheader()
+
+        self._names = []
+        for i, base_name in enumerate(self.img_names):
+            name, _ = os.path.splitext(base_name)
+            for j in range(self.render_per_input):
+                render_name = f"{name}_{j:0>5d}.jpg"
+                try:
+                    self._arrange_scene(base_name)
+                    self._render(render_name)
+                except Exception as e:
+                    logging.exception(f"Error with {i}: ", e)
+                else:
+                    self._names.append(
+                        [
+                            base_name,
+                            os.path.abspath(
+                                os.path.join(self.dst, "images", render_name)
+                            ),
+                        ]
+                    )
+                    if writer:
+                        writer.writerow(
+                            {"base_img": base_name, "query_img": render_name}
+                        )
+
+                if (
+                    self.max_images_to_render is not None
+                    and len(self._names) > self.max_images_to_render
+                ):
+                    logging.info("Finished at max images")
+                    break
+
+            logging.info(f"Generated images for {i + 1} inputs")
+
+    def run(self) -> None:
+        os.makedirs(os.path.join(self.dst, "images"))
+
+        csv_file = None
+        writer = None
+
+        if self.generate_table:
+            csv_file = open(os.path.join(self.dst, "map.csv"), "w")
+            writer = csv.DictWriter(csv_file, ["base_img", "query_img"])
+
+        logging.info("Starting generation process")
+        try:
+            self._rendering_loop(writer)
+        except Exception as e:
+            logging.exception(e)
+            logging.info("Exception occured while rendering, stopping...")
+
+            if csv_file:
+                csv_file.close()
+                logging.info("Map file closed")
+
+        if self.generate_meta:
+            logging.info("Writing meta")
+            self._write_meta()
+
+        logging.info("Done!")

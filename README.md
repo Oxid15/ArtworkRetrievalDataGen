@@ -32,4 +32,4 @@ git clone https://github.com/Oxid15/ArtworkRetrievalDataGen.git
 
 4. Review the results in the destination folder
 
-    ![Alt text](./examples/00000.png)
+    ![Example](./examples/00000.jpg)
