@@ -139,7 +139,6 @@ class Generator:
             self.dst, "images", render_name
         )
         bpy.context.scene.render.image_settings.file_format = "JPEG"
-        print(bpy.context.scene.render.filepath)
         bpy.ops.render.render("INVOKE_DEFAULT", write_still=True)
 
     def _write_meta(self) -> None:
@@ -188,8 +187,10 @@ class Generator:
                     self.max_images_to_render is not None
                     and len(self._names) > self.max_images_to_render
                 ):
-                    print("Finished at max images")
+                    logging.info("Finished at max images")
                     break
+
+            logging.info(f"Generated for {i + 1} input images")
 
     def run(self) -> None:
         os.makedirs(os.path.join(self.dst, "images"))
@@ -205,10 +206,11 @@ class Generator:
             self._rendering_loop(writer)
         except Exception as e:
             logging.exception(e)
-            logging.error("Exception occured while training, stopping...")
+            logging.info("Exception occured while rendering, stopping...")
 
             if csv_file:
                 csv_file.close()
+                logging.info("Map file closed")
 
         if self.generate_meta:
             self._write_meta()
