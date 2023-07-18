@@ -190,7 +190,7 @@ class Generator:
                     logging.info("Finished at max images")
                     break
 
-            logging.info(f"Generated for {i + 1} input images")
+            logging.info(f"Generated images for {i + 1} inputs")
 
     def run(self) -> None:
         os.makedirs(os.path.join(self.dst, "images"))
@@ -202,6 +202,7 @@ class Generator:
             csv_file = open(os.path.join(self.dst, "map.csv"), "w")
             writer = csv.DictWriter(csv_file, ["base_img", "query_img"])
 
+        logging.info("Starting generation process")
         try:
             self._rendering_loop(writer)
         except Exception as e:
@@ -213,4 +214,7 @@ class Generator:
                 logging.info("Map file closed")
 
         if self.generate_meta:
+            logging.info("Writing meta")
             self._write_meta()
+
+        logging.info("Done!")
