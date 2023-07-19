@@ -149,7 +149,7 @@ class Generator:
             "camera_angles_range_v": self.camera_angles_range_v,
             "camera_distance_range": self.camera_distance_range,
             "render_per_input": self.render_per_input,
-            "size": self._names,
+            "size": self.generated_count,
         }
 
         with open(os.path.join(self.dst, "meta.json"), "w") as f:
@@ -159,7 +159,7 @@ class Generator:
         if writer:
             writer.writeheader()
 
-        self._names = []
+        self.generated_count = 0
         for i, base_name in enumerate(self.img_names):
             name, _ = os.path.splitext(base_name)
             for j in range(self.render_per_input):
@@ -170,25 +170,18 @@ class Generator:
                 except Exception as e:
                     logging.exception(f"Error with {i}: ", e)
                 else:
-                    self._names.append(
-                        [
-                            base_name,
-                            os.path.abspath(
-                                os.path.join(self.dst, "images", render_name)
-                            ),
-                        ]
-                    )
                     if writer:
                         writer.writerow(
-                            {"base_img": base_name, "query_img": render_name}
+                            {"base_img": os.path.join(self.src, base_name), "query_img": os.path.join(self.dst, "images", render_name)}
                         )
+                    self.generated_count += 1
 
                 if (
                     self.max_images_to_render is not None
-                    and len(self._names) > self.max_images_to_render
+                    and self.generated_count >= self.max_images_to_render
                 ):
                     logging.info("Finished at max images")
-                    break
+                    return
 
             logging.info(f"Generated images for {i + 1} inputs")
 
