@@ -3,6 +3,7 @@ import json
 import logging
 import os
 from typing import Tuple, Union
+from random import shuffle
 
 import bpy
 
@@ -21,6 +22,7 @@ class Generator:
         max_images_to_render: Union[int, None] = None,
         generate_table: bool = False,
         generate_meta: bool = False,
+        shuffle_input=False
     ) -> None:
         self.src = src
         self.dst = dst
@@ -31,11 +33,14 @@ class Generator:
         self.max_images_to_render = max_images_to_render
         self.generate_table = generate_table
         self.generate_meta = generate_meta
+        self.shuffle_input = shuffle_input
 
         self.parse_images()
 
     def parse_images(self) -> None:
         self.img_names = sorted(os.listdir(self.src))
+        if self.shuffle_input:
+            shuffle(self.img_names)
 
     def _clear_scene(self) -> None:
         while len(bpy.data.objects):
