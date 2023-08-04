@@ -45,10 +45,12 @@ class Generator:
     def _clear_scene(self) -> None:
         while len(bpy.data.objects):
             obj = bpy.data.objects[-1]
+
             obj.select_set(True)
             bpy.ops.object.delete(use_global=False)
 
-            # bpy.data.materials.remove(bpy.data.materials['Wall-Material'])
+        for img in bpy.data.images:
+            bpy.data.images.remove(img)
 
     def _add_camera(self) -> None:
         v_min, v_max = self.camera_angles_range_v
